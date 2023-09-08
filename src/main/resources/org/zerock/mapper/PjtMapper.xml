@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- mapper DTD 선언 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="org.zerock.mapper.PjtMapper">
+  
+  <select id="getPjtList" resultType="org.zerock.domain.VO.PjtVO">
+  	<![CDATA[
+  		select 
+  			pjtNo,
+  			pjtNm,
+  			pjtFromDate,
+  			pjtToDate,
+  			pjtSkill,
+  			cmpyNm
+  		from
+  			(
+  			select /* +INDEX_DESC(pjt pjtNo) */
+  			 rownum rn,
+  			 pjtNo,
+  			 pjtNm,
+  			 pjtFromDate,
+  			 pjtToDate,
+  			 pcd3.dtlcdnm as pjtSkill,
+  			 pcd6.dtlcdnm as cmpyNm
+  			from pjt
+  			  left outer join codedtl pcd3 on (pcd3.dcode='D300' and pjt.pjtSkill= pcd3.dtlcd)
+  			  left outer join codedtl pcd6 on (pcd6.dcode='D600' and pjt.cmpyNm= pcd6.dtlcd)
+  			where 
+  			delete_col = 1 
+  			and rownum<=#{pageNum} * #{amount}
+  			order by pjtNo desc
+  			)
+  			where rn>(#{pageNum} -1) * #{amount}
+  	]]> 
+  </select>
+  
+  <select id="searchWithTypes" resultType="org.zerock.domain.VO.PjtVO">
+	    <![CDATA[
+	    select
+	      pjtNo,
+  		  pjtNm,
+  		  pjtFromDate,
+  		  pjtToDate,
+  		  pjtSkill,
+  		  cmpyNm
+	    from (
+	      select /* +INDEX_DESC(pjt pjtNo) */
+	        rownum rn, 
+	        pjtNo,
+  			pjtNm,
+  			pjtFromDate,
+  			pjtToDate,
+  			pcd3.dtlcdnm as pjtSkill,
+  			pcd6.dtlcdnm as cmpyNm
+	      from pjt
+  			left outer join codedtl pcd3 on (pcd3.dcode='D300' and pjt.pjtSkill= pcd3.dtlcd)
+  			left outer join codedtl pcd6 on (pcd6.dcode='D600' and pjt.cmpyNm= pcd6.dtlcd)
+  		  where
+	      	delete_col = 1 
+	      	and pjtNm like '%' || #{pjtNm} || '%'
+	      order by pjtNo desc
+	    )
+	    where rn > (#{pageNum} - 1) * #{amount}
+	    and rownum <= #{pageNum} * #{amount}
+	    and pjtFromDate >= #{from}
+        and pjtFromDate <= #{to}
+	    ]]>
+	</select>
+    
+    <select id="getPjtMNames" resultType="java.lang.String">
+    	select nm 
+		from usr 
+		where no in (
+		  select no
+		  from usrPjt up
+		  where pjtNo = #{pjtNo}
+		  )
+    </select>
+    
+    <insert id="enrollPjt" parameterType="org.zerock.domain.VO.PjtVO">
+        insert into pjt (
+          pjtNo, 
+          pjtNm, 
+          pjtFromDate,
+	      pjtToDate,
+          cmpyNm,
+          delete_col
+        )
+        values (
+            project_seq.nextval, 
+            #{pjtNm}, 
+            #{pjtFromDate}, 
+            #{pjtToDate},
+            #{cmpyNm},
+            '1'
+        )
+    </insert>
+    
+    <select id="getTotalCount" resultType="int">
+	  <![CDATA[
+	    SELECT COUNT(*)
+	    FROM pjt	     
+	      LEFT OUTER JOIN codedtl pcd6 on (pcd6.dcode='D600' and pjt.cmpyNm= pcd6.dtlcd)
+	    WHERE delete_col = 1 
+	      AND pjtNm LIKE '%' || #{pjtNm} || '%' 
+	      AND pjtFromDate >= #{from} 
+	      AND pjtFromDate <= #{to}
+	  ]]>
+	</select>
+</mapper>

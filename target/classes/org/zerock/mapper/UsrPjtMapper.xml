@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- mapper DTD 선언 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.UsrPjtMapper">
+	<select id="getUsrPjtListByTypes" resultType="org.zerock.domain.UsrPjtDTO">
+	  <![CDATA[
+	  SELECT 
+	  	usr.nm AS nm,
+	    NVL(up.pjtmng_FromDate, '-') AS pjtmng_FromDate,
+	    NVL(up.pjtmng_ToDate, '-') AS pjtmng_ToDate,
+	    NVL(cd7.dtlcdnm, '-') AS pjtRole,
+	    NVL(pjt.pjtNm,'-') AS pjtNm 
+	  FROM usr
+	    LEFT JOIN usrPjt up ON up.no = usr.no
+		LEFT JOIN pjt ON up.pjtNo = pjt.pjtNo
+		LEFT OUTER JOIN codedtl cd7 on (cd7.dcode='D700' and up.pjtRole = cd7.dtlcd) 
+	  WHERE usr.nm LIKE '%' || #{nm} || '%'
+	    AND up.pjtmng_FromDate >= #{from}
+	    AND up.pjtmng_FromDate <= #{to}
+	    AND up.pjtRole = #{pjtRole}
+	  ]]>
+	</select>
+
+	<select id="getUsrPjtList" resultType="org.zerock.domain.UsrPjtDTO">
+		SELECT
+		 usr.nm AS nm,
+		 NVL(up.pjtmng_FromDate, '-') AS pjtmng_FromDate,
+		 NVL(up.pjtmng_ToDate, '-') AS pjtmng_ToDate,
+		 NVL(cd7.dtlcdnm, '-') AS pjtRole,
+		 NVL(pjt.pjtNm,'-') AS pjtNm
+		FROM usr
+		 LEFT JOIN usrPjt up ON up.no = usr.no
+		 LEFT JOIN pjt ON up.pjtNo = pjt.pjtNo
+		 LEFT OUTER JOIN codedtl cd7 on (cd7.dcode='D700' and up.pjtRole = cd7.dtlcd)
+	</select>
+
+	<insert id="enrollUPMembers" parameterType="org.zerock.domain.UsrPjtDTO">
+		INSERT INTO usrPjt (
+		  pjtNo,
+		  no,
+		  pjtmng_FromDate,
+		  pjtmng_ToDate,
+		  pjtRole
+		)
+		VALUES (
+		  #{pjtNo},
+		  #{no},
+		  #{pjtmng_FromDate},
+		  #{pjtmng_ToDate},
+		  #{pjtRole}
+		)
+	</insert>
+
+	<select id="getUsrPjtListByPjtNo" resultType="org.zerock.domain.UsrPjtDTO">
+		SELECT
+		  usr.nm AS nm,
+		  NVL(up.pjtmng_FromDate, '-') AS pjtmng_FromDate,
+		  NVL(up.pjtmng_ToDate, '-') AS pjtmng_ToDate,
+		  NVL(cd7.dtlcdnm, '-') AS pjtRole,
+		  NVL(pjt.pjtNm,'-') AS pjtNm
+		FROM usr
+		  LEFT JOIN usrPjt up ON up.no = pjt.pjtNo
+		  LEFT JOIN pjt ON up.pjtNo = pjt.pjtNo
+		  LEFT OUTER JOIN codedtl cd7 on (cd7.dcode='D700' and up.pjtRole = cd7.dtlcd)
+		WHERE pjt.pjtNo = #{pjtNo}
+	</select>
+  </mapper>

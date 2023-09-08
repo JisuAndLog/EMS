@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- mapper DTD 선언 -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="org.zerock.mapper.UsrMapper">
+
+	<select id="getListWithPaging" resultType="org.zerock.domain.VO.UsrVO"> 
+		<![CDATA[
+		select
+		  a.entrDate, 
+		  a.no, 
+		  a.nm, 
+		  a.birth, 	    
+		  a.jobSkill, 
+		  a.inoffi_sts 
+		from (select
+				ROW_NUMBER() OVER (ORDER BY entrDate DESC) as rn, 
+				entrDate, 
+				no, 
+				nm, 
+				birth, 	    
+				cd3.dtlcdnm as jobSkill, 
+				cd5.dtlcdnm as inoffi_sts 
+	  		  from usr 
+	  		    left outer join codedtl cd3 on (cd3.dcode='D300' and usr.jobSkill = cd3.dtlcd) 
+	  		    left outer join codedtl cd5 on (cd5.dcode='D500' and usr.inoffi_sts = cd5.dtlcd),
+	  		    (select @rownum := 0) r	  		    
+	  		  where delete_col = 1 
+	  		  order by entrDate desc ) a
+	  	where a.rn between (#{pageNum}-1) * #{amount} and #{pageNum} * #{amount} 
+  		  ]]> 
+  		</select>
+
+	<select id="searchWithTypes"
+		resultType="org.zerock.domain.VO.UsrVO">
+	    <![CDATA[
+	    select
+		  a.entrDate, 
+		  a.no, 
+		  a.nm, 
+		  a.birth, 	    
+		  a.jobSkill, 
+		  a.inoffi_sts
+		from (select 
+				ROW_NUMBER() OVER (ORDER BY entrDate DESC) as rn, 
+				entrDate, 
+				no, 
+				nm, 
+				birth, 	    
+				cd3.dtlcdnm as jobSkill, 
+				cd5.dtlcdnm as inoffi_sts 
+	  		  from usr 
+	  		    left outer join codedtl cd3 on (cd3.dcode='D300' and usr.jobSkill = cd3.dtlcd) 
+	  		    left outer join codedtl cd5 on (cd5.dcode='D500' and usr.inoffi_sts = cd5.dtlcd),
+	  		    (select @rownum := 0) r 
+	  		  where delete_col = 1
+	  		    and jobSkill like concat('%', #{jobSkill}, '%')
+	  		    and inoffi_sts like concat('%', #{inoffi_sts}, '%')
+	  		    and nm like concat('%', #{nm}, '%')
+	  		  order by entrDate desc ) a
+	  	where a.rn between (#{pageNum}-1) * #{amount} and #{pageNum} * #{amount}
+	  	  and entrDate between #{from} and #{to}
+	    ]]>
+	</select>
+
+	<select id="countSearchWithTypes" resultType="java.lang.Integer">
+	    <![CDATA[
+	    select 
+	      count(*) as total
+	    from usr
+	      left outer join codedtl cd3 on (cd3.dcode='D300' and usr.jobSkill = cd3.dtlcd)
+	      left outer join codedtl cd5 on (cd5.dcode='D500' and usr.inoffi_sts = cd5.dtlcd)
+	    where
+	      delete_col = 1 
+	      and jobSkill like concat('%', #{jobSkill}, '%')
+	      and inoffi_sts like concat('%', #{inoffi_sts}, '%')
+	      and nm like concat('%', #{nm}, '%')
+	      and entrDate between #{from} and #{to} 
+	    ]]>
+	</select>
+
+	<update id="modifyUsr">
+		update usr
+		set
+		  nm = #{nm},
+		  sex = #{sex},
+		  birth = #{birth},
+		  inoffi_sts = #{inoffi_sts},
+		  entrDate = #{entrDate},
+		  devPt = #{devPt},
+		  jobSkill = #{jobSkill},
+		  jobRank = #{jobRank},
+		  mblNo = #{mblNo},
+		  emailAddr = #{emailAddr}
+		where no = #{no}
+	</update>
+
+	<insert id="enrollUsr"
+		parameterType="org.zerock.domain.VO.UsrVO">
+		INSERT INTO usr (
+		  entrDate,
+		  no,
+		  nm,
+		  sex,
+		  birth,
+		  inoffi_sts,
+		  devPt,
+		  jobSkill,
+		  jobRank,
+		  mblNo,
+		  emailAddr,
+		  delete_col)
+		VALUES (
+		  #{entrDate},
+		  #{no},
+		  #{nm},
+		  #{sex},
+		  #{birth},
+		  #{inoffi_sts},
+  		  #{devPt},
+		  #{jobSkill},
+		  #{jobRank},
+		  #{mblNo},
+		  #{emailAddr},
+		  '1')
+	</insert>
+	
+	<select id="getUsrByNo" resultType="org.zerock.domain.VO.UsrVO">
+     	select
+     	  no,
+		  nm,
+		  cd1.dtlcdnm as sex,
+		  birth,
+		  cd5.dtlcdnm as inoffi_sts,
+		  entrDate,
+		  cd4.dtlcdnm as devPt,
+		  cd3.dtlcdnm as jobSkill,
+		  cd2.dtlcdnm as jobRank,
+		  mblNo,
+		  emailAddr
+        from usr
+          left outer join codedtl cd1 on (cd1.dcode='D100' and usr.sex = cd1.dtlcd)
+          left outer join codedtl cd2 on (cd2.dcode='D200' and usr.jobRank = cd2.dtlcd)
+          left outer join codedtl cd3 on (cd3.dcode='D300' and usr.jobSkill = cd3.dtlcd)
+          left outer join codedtl cd4 on (cd4.dcode='D400' and usr.devPt = cd4.dtlcd)
+  		  left outer join codedtl cd5 on (cd5.dcode='D500' and usr.inoffi_sts = cd5.dtlcd)
+  		where no = #{no}
+    </select>
+    
+    <select id="getTotalCount" resultType="int">
+    	select count(*) 
+    	from usr 
+    	where delete_col = 1
+    </select> 
+    
+    <!-- 사번 중복 체크 -->
+	<select id="noCheck" parameterType="String" resultType="int">
+		SELECT COUNT(no) 
+		FROM usr 
+		WHERE no= #{no}
+	</select>
+	   
+      
+</mapper>
